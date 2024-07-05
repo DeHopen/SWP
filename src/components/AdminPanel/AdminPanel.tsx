@@ -3,7 +3,19 @@
 import { useEffect, useState } from 'react';
 import { useSelector, useDispatch } from 'react-redux';
 import { RootState, AppDispatch } from '@/store/store';
-import { setSelection, setIdUser, setIdGroup, addTopicUser, removeTopicUser, addTopicGroup, removeTopicGroup } from '@/store/userSlice/userSlice';
+import {
+    setSelection,
+    setIdUser,
+    setIdGroup,
+    addTopicUser,
+    removeTopicUser,
+    addTaskToTopicUser,
+    removeTaskFromTopicUser,
+    addTopicGroup,
+    removeTopicGroup,
+    addTaskToTopicGroup,
+    removeTaskFromTopicGroup
+} from '@/store/userSlice/userSlice';
 import "@/components/styles/AdminPanel.scss";
 
 const AdminPanel = () => {
@@ -11,7 +23,9 @@ const AdminPanel = () => {
     const { selection, id_user_list, id_group_list, id_user, id_group, topics_user, topics_group } = useSelector((state: RootState) => state.user);
 
     const [newTopic, setNewTopic] = useState('');
+    const [newTask, setNewTask] = useState('');
     const [selectedId, setSelectedId] = useState<string>('');
+    const [selectedTopic, setSelectedTopic] = useState<string>('');
 
     const handleAddTopic = () => {
         if (newTopic.trim() !== '') {
@@ -23,9 +37,20 @@ const AdminPanel = () => {
         }
     };
 
+    const handleAddTask = () => {
+        if (newTask.trim() !== '') {
+            if (selection === 'group')
+                dispatch(addTaskToTopicGroup({ id: id_group!, topic: selectedTopic, task: newTask }));
+            else
+                dispatch(addTaskToTopicUser({ id: id_user!, topic: selectedTopic, task: newTask }));
+            setNewTask('');
+        }
+    };
+
     const handleIdChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
         const selectedValue = e.target.value;
         setSelectedId(selectedValue);
+        setSelectedTopic(''); // Reset selected topic when ID changes
         if (selection === 'participant') {
             dispatch(setIdUser(selectedValue));
         } else {
@@ -33,11 +58,31 @@ const AdminPanel = () => {
         }
     };
 
+    const handleRemoveTopic = (topic: string) => {
+        if (selection === 'group') {
+            dispatch(removeTopicGroup({ id: id_group!, topic }));
+        } else {
+            dispatch(removeTopicUser({ id: id_user!, topic }));
+        }
+        if (selectedTopic === topic) {
+            setSelectedTopic('');
+        }
+    };
+
+    const handleRemoveTask = (taskId: string) => {
+        if (selection === 'group') {
+            dispatch(removeTaskFromTopicGroup({ id: id_group!, topic: selectedTopic, taskId }));
+        } else {
+            dispatch(removeTaskFromTopicUser({ id: id_user!, topic: selectedTopic, taskId }));
+        }
+    };
+
     useEffect(() => {
         setSelectedId(selection === 'participant' ? (id_user !== null ? id_user : '') : (id_group !== null ? id_group : ''));
     }, [selection, dispatch, id_user, id_group]);
 
-    const topics = selection === 'group' ? (id_group ? topics_group[id_group] || [] : []) : (id_user ? topics_user[id_user] || [] : []);
+    const topics = selection === 'group' ? (id_group ? topics_group[id_group] || {} : {}) : (id_user ? topics_user[id_user] || {} : {});
+    const tasks = selectedTopic && topics[selectedTopic] ? topics[selectedTopic] : [];
 
     return (
         <div className='admin-panel'>
@@ -64,16 +109,12 @@ const AdminPanel = () => {
                     {selectedId && (
                         <div>
                             <label>Темы {(selection === 'participant' ? "участника" : "группы")}:</label>
-                            <ul className={`topics ${topics.length === 0 ? 'empty-topics' : ''}`}>
-                                {topics.map((topic, index) => (
+                            <ul className={`topics ${Object.keys(topics).length === 0 ? 'empty-topics' : ''}`}>
+                                {Object.keys(topics).map((topic, index) => (
                                     <li key={index}>
-                                        <div className="topic-item">
+                                        <div className="topic-item" onClick={() => setSelectedTopic(topic)}>
                                             {index + 1}. {topic}
-                                            <button onClick={() => dispatch(selection === 'group' ? removeTopicGroup({
-                                                id: id_group!,
-                                                index
-                                            }) : removeTopicUser({id: id_user!, index}))}>Удалить
-                                            </button>
+                                            <button onClick={() => handleRemoveTopic(topic)}>Удалить</button>
                                         </div>
                                     </li>
                                 ))}
@@ -90,6 +131,26 @@ const AdminPanel = () => {
                                 placeholder="Напишите тему"
                             />
                             <button onClick={handleAddTopic}>Добавить</button>
+                        </div>
+                    )}
+                    {selectedTopic && (
+                        <div className="add-task">
+                            <label>Задачи для {selectedTopic}:</label>
+                            <ul className="tasks">
+                                {tasks.map((task, index) => (
+                                    <li key={task.id}>
+                                        {index + 1}. {task.task}
+                                        <button onClick={() => handleRemoveTask(task.id)}>Удалить</button>
+                                    </li>
+                                ))}
+                            </ul>
+                            <input
+                                type="text"
+                                value={newTask}
+                                onChange={(e) => setNewTask(e.target.value)}
+                                placeholder="Напишите задачу"
+                            />
+                            <button onClick={handleAddTask}>Добавить задачу</button>
                         </div>
                     )}
                 </div>
