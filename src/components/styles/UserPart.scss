@@ -1,0 +1,81 @@
+.title {
+  font-size: 36px;
+  font-weight: 600;
+  line-height: 54px;
+  letter-spacing: -0.01em;
+  color: #0000CD;
+  border-bottom: #E4E7F2 solid 1px;
+  margin-left: 22px;
+}
+
+.documentation {
+  width: 20%;
+}
+
+main {
+  display: flex;
+  align-items: baseline;
+  label {
+    color: #0000CD;
+    font-weight: 700;
+    font-size: 23px;
+  }
+}
+
+h2 {
+  font-size: 42px;
+  font-weight: 600;
+  line-height: 63px;
+  text-align: left;
+  color: #3B4168;
+}
+
+.tasks {
+  display: grid;
+  grid-template-columns: 30% 30% 30%;
+}
+
+.task-item {
+  height: 250px;
+  border-radius: 48px;
+  background: #BDB7FC;
+  color: #FFFFFF;
+  padding: 45px 30px;
+  margin: 3%;
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  justify-content: flex-start;
+}
+
+.task-item h3 {
+  font-size: 25px;
+  padding-bottom: 10px;
+}
+
+.task-item p {
+  font-size: 20px;
+}
+
+.task-item button {
+  background: #FFFFFF;
+  color: #3B4168;
+  border: #3B4168 solid 1px;
+  border-radius: 12px;
+  padding: 14px 20px;
+  font-size: 20px;
+  font-weight: 500;
+  line-height: 30px;
+  text-align: center;
+  margin: 10px;
+  position: absolute;
+  bottom: 5%;
+  left: 45%;
+  text-align: center;
+  transform: translateX(-50%);
+}
+
+button:hover {
+  background: #3B4168;
+  color: #FFFFFF;
+}

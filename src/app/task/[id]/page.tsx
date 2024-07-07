@@ -3,6 +3,7 @@
 import {useParams, useRouter} from 'next/navigation';
 import { useState } from 'react';
 import { Task, Tasks } from '@/components/Types/types';
+import "@/components/styles/UserPartTopic.scss";
 
 const tasks: Tasks = {
   1: [
@@ -37,27 +38,29 @@ export default function Topic() {
   const topicName = topicNames[topicId] || 'Неизвестная тема';
 
   return (
-      <div>
-        <button onClick={() => router.push('/')}>Назад к выбору темы</button>
-        <h1>Задачи по теме: {topicName}</h1>
-        <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
-          {topicTasks.map((task) => (
-              <div
-                  key={task.id}
-                  onClick={() => setExpandedTask(expandedTask === task.id ? null : task.id)}
-                  style={{
-                    border: '1px solid #000',
-                    padding: '1rem',
-                    borderRadius: '8px',
-                    cursor: 'pointer',
-                    background: expandedTask === task.id ? '#f0f0f0' : '#fff',
-                  }}
-              >
-                <h3>{task.summary}</h3>
-                {expandedTask === task.id && <p>{task.details}</p>}
+      <div className='admin-panel'>
+        <h1 className="title">Math Helper</h1>
+        <main>
+          <div className="documentation"></div>
+          <div>
+            <div>
+              <h2>Задачи по теме: {topicName}</h2>
+              <div className="topics">
+                {topicTasks.map((task) => (
+                    <div
+                        key={task.id}
+                        onClick={() => setExpandedTask(expandedTask === task.id ? null : task.id)}
+                        className="topic-item"
+                    >
+                      <h3>{task.summary}</h3>
+                      {expandedTask === task.id && <p>{task.details}</p>}
+                    </div>
+                ))}
               </div>
-          ))}
-        </div>
+              <button onClick={() => router.push('/')}>Назад к выбору темы</button>
+            </div>
+          </div>
+        </main>
       </div>
   );
 }

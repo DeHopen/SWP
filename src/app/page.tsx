@@ -1,5 +1,6 @@
 // pages/index.tsx
 import Link from 'next/link';
+import "@/components/styles/UserPart.scss";
 
 const topics = [
   { id: 1, name: 'Алгебра', description: 'Изучение алгебраических выражений и уравнений.' },
@@ -9,18 +10,27 @@ const topics = [
 
 export default function Home() {
   return (
-      <div>
-        <h1>Выберите математическую тему</h1>
-        <div style={{ display: 'flex', gap: '1rem' }}>
-          {topics.map((topic) => (
-              <Link key={topic.id} href={`/task/${topic.id}`}>
-                <span style={{ border: '1px solid #000', padding: '1rem', borderRadius: '8px' }}>
-                  <h2>{topic.name}</h2>
-                  <p>{topic.description}</p>
-                </span>
-              </Link>
-          ))}
-        </div>
+      <div className='admin-panel'>
+          <h1 className="title">Math Helper</h1>
+          <main>
+              <div className="documentation"></div>
+              <div>
+                  <h2>Directions</h2>
+                  <div className="tasks">
+                  {topics.map((topic) => (
+                        <div className="task-item">
+                          <h3>{topic.name}</h3>
+                          <p>{topic.description}</p>
+                            <div className="btn-study">
+                            <Link key={topic.id} href={`/task/${topic.id}`}>
+                                <button>Учиться</button>
+                            </Link>
+                            </div>
+                        </div>
+                      ))}
+                  </div>
+              </div>
+          </main>
       </div>
   );
 }

@@ -85,7 +85,7 @@ const AdminPanel = () => {
     const tasks = selectedTopic && topics[selectedTopic] ? topics[selectedTopic] : [];
 
     return (
-        <div className='admin-panel'>
+        <div className='main-user-page'>
             <h1 className="title">Math Helper</h1>
             <main>
                 <div className="documentation"></div>
