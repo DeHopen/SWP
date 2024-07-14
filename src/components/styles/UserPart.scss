@@ -12,7 +12,23 @@
   width: 20%;
 }
 
+main {
+  display: flex;
+  align-items: baseline;
+  label {
+    color: #0000CD;
+    font-weight: 700;
+    font-size: 23px;
+  }
+}
 
+h2 {
+  font-size: 42px;
+  font-weight: 600;
+  line-height: 63px;
+  text-align: left;
+  color: #3B4168;
+}
 
 .tasks {
   display: grid;
@@ -30,13 +46,6 @@
   display: flex;
   flex-direction: column;
   justify-content: flex-start;
-  h2 {
-    font-size: 42px;
-    font-weight: 600;
-    line-height: 63px;
-    text-align: left;
-    color: #3B4168;
-  }
 }
 
 .task-item h3 {
@@ -62,5 +71,11 @@
   position: absolute;
   bottom: 5%;
   left: 45%;
+  text-align: center;
   transform: translateX(-50%);
+}
+
+button:hover {
+  background: #3B4168;
+  color: #FFFFFF;
 }
