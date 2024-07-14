@@ -33,7 +33,7 @@ const AdminPanel = () => {
     const [createTopic] = useCreateTopicMutation();
     const [deleteTopic] = useDeleteTopicMutation();
     const [createTask] = useCreateTaskMutation();
-    const [id, setId] = useState<string>("2");
+    const [id, setId] = useState<string>("");
     const { data: topic, isLoading } = useGetTopicsQuery(id);
     const { data: tasks, error: tasksError, isLoading: isLoadingTasks } = useGetTasksQuery(
         selectedTopic && selectedId ? { topic_id: selectedTopic, user_id: selectedId } : skipToken, {
@@ -143,11 +143,11 @@ const AdminPanel = () => {
                     {selectedId && (
                         <div>
                             <label>Темы {(selection === 'participant' ? "участника" : "группы")}:</label>
-                            <ul className={`topics ${Object.keys(topic).length === 0 ? 'empty-topics' : ''}`}>
-                                {Object.keys(topic).map((top, index) => (
+                            <ul className={`topics ${topics && Object.keys(topics).length === 0 ? 'empty-topics' : ''}`}>
+                                {topics && Object.keys(topics).map((topic, index) => (
                                     <li key={index}>
-                                        <div className="topic-item" onClick={() => setSelectedTopic(top)}>
-                                            {index + 1}. {top}
+                                        <div className="topic-item" onClick={() => setSelectedTopic(topic)}>
+                                            {index + 1}. {topic}
                                             <button onClick={() => handleRemoveTopic(topic)}>Удалить</button>
                                         </div>
                                     </li>
