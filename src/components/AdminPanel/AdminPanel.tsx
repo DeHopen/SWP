@@ -1,4 +1,4 @@
-"use client";
+'use client';
 
 import { useEffect, useState } from 'react';
 import { useSelector, useDispatch } from 'react-redux';
@@ -17,6 +17,9 @@ import {
     removeTaskFromTopicGroup
 } from '@/store/userSlice/userSlice';
 import "@/components/styles/AdminPanel.scss";
+import { useCreateTopicMutation, useDeleteTopicMutation, useGetTopicsQuery } from '@/store/api/topicsApi';
+import { useCreateTaskMutation, useGetTasksQuery } from '@/store/api/taskApi';
+import { skipToken } from '@reduxjs/toolkit/query/react';
 
 const AdminPanel = () => {
     const dispatch: AppDispatch = useDispatch();
@@ -27,23 +30,65 @@ const AdminPanel = () => {
     const [selectedId, setSelectedId] = useState<string>('');
     const [selectedTopic, setSelectedTopic] = useState<string>('');
 
-    const handleAddTopic = () => {
+    const [createTopic] = useCreateTopicMutation();
+    const [deleteTopic] = useDeleteTopicMutation();
+    const [createTask] = useCreateTaskMutation();
+    const [id, setId] = useState<string>("2");
+    const { data: topic, isLoading } = useGetTopicsQuery(id);
+    const { data: tasks, error: tasksError, isLoading: isLoadingTasks } = useGetTasksQuery(
+        selectedTopic && selectedId ? { topic_id: selectedTopic, user_id: selectedId } : skipToken, {
+            skip: !selectedTopic || !selectedId,
+        }
+    );
+
+    const handleAddTopic = async () => {
         if (newTopic.trim() !== '') {
-            if (selection === 'group')
-                dispatch(addTopicGroup({ id: id_group!, topic: newTopic }));
-            else
-                dispatch(addTopicUser({ id: id_user!, topic: newTopic }));
-            setNewTopic('');
+            try {
+                if (selection === 'group') {
+                    await createTopic({ topic: newTopic, user_id: id_group! }).unwrap();
+                    dispatch(addTopicGroup({ id: id_group!, topic: newTopic }));
+                } else {
+                    await createTopic({ topic: newTopic, user_id: id_user! }).unwrap();
+                    dispatch(addTopicUser({ id: id_user!, topic: newTopic }));
+                }
+                setNewTopic('');
+            } catch (error) {
+                console.error('Failed to add topic:', error);
+            }
         }
     };
 
-    const handleAddTask = () => {
+    const handleRemoveTopic = async (topic: string) => {
+        try {
+            if (selection === 'group') {
+                await deleteTopic({ topic_id: topic, user_id: id_group! }).unwrap();
+                dispatch(removeTopicGroup({ id: id_group!, topic }));
+            } else {
+                await deleteTopic({ topic_id: topic, user_id: id_user! }).unwrap();
+                dispatch(removeTopicUser({ id: id_user!, topic }));
+            }
+            if (selectedTopic === topic) {
+                setSelectedTopic('');
+            }
+        } catch (error) {
+            console.error('Failed to remove topic:', error);
+        }
+    };
+
+    const handleAddTask = async () => {
         if (newTask.trim() !== '') {
-            if (selection === 'group')
-                dispatch(addTaskToTopicGroup({ id: id_group!, topic: selectedTopic, task: newTask }));
-            else
-                dispatch(addTaskToTopicUser({ id: id_user!, topic: selectedTopic, task: newTask }));
-            setNewTask('');
+            try {
+                if (selection === 'group') {
+                    await createTask({ description: newTask, name: newTask, topic_id: selectedTopic, user_id: id_group! }).unwrap();
+                    dispatch(addTaskToTopicGroup({ id: id_group!, topic: selectedTopic, task: newTask }));
+                } else {
+                    await createTask({ description: newTask, name: newTask, topic_id: selectedTopic, user_id: id_user! }).unwrap();
+                    dispatch(addTaskToTopicUser({ id: id_user!, topic: selectedTopic, task: newTask }));
+                }
+                setNewTask('');
+            } catch (error) {
+                console.error('Failed to add task:', error);
+            }
         }
     };
 
@@ -55,17 +100,6 @@ const AdminPanel = () => {
             dispatch(setIdUser(selectedValue));
         } else {
             dispatch(setIdGroup(selectedValue));
-        }
-    };
-
-    const handleRemoveTopic = (topic: string) => {
-        if (selection === 'group') {
-            dispatch(removeTopicGroup({ id: id_group!, topic }));
-        } else {
-            dispatch(removeTopicUser({ id: id_user!, topic }));
-        }
-        if (selectedTopic === topic) {
-            setSelectedTopic('');
         }
     };
 
@@ -82,7 +116,7 @@ const AdminPanel = () => {
     }, [selection, dispatch, id_user, id_group]);
 
     const topics = selection === 'group' ? (id_group ? topics_group[id_group] || {} : {}) : (id_user ? topics_user[id_user] || {} : {});
-    const tasks = selectedTopic && topics[selectedTopic] ? topics[selectedTopic] : [];
+    const currentTasks = tasks ? tasks : [];
 
     return (
         <div className='main-user-page'>
@@ -109,11 +143,11 @@ const AdminPanel = () => {
                     {selectedId && (
                         <div>
                             <label>Темы {(selection === 'participant' ? "участника" : "группы")}:</label>
-                            <ul className={`topics ${Object.keys(topics).length === 0 ? 'empty-topics' : ''}`}>
-                                {Object.keys(topics).map((topic, index) => (
+                            <ul className={`topics ${Object.keys(topic).length === 0 ? 'empty-topics' : ''}`}>
+                                {Object.keys(topic).map((top, index) => (
                                     <li key={index}>
-                                        <div className="topic-item" onClick={() => setSelectedTopic(topic)}>
-                                            {index + 1}. {topic}
+                                        <div className="topic-item" onClick={() => setSelectedTopic(top)}>
+                                            {index + 1}. {top}
                                             <button onClick={() => handleRemoveTopic(topic)}>Удалить</button>
                                         </div>
                                     </li>
@@ -137,9 +171,9 @@ const AdminPanel = () => {
                         <div className="add-task">
                             <label>Задачи для {selectedTopic}:</label>
                             <ul className="tasks">
-                                {tasks.map((task, index) => (
+                                {currentTasks.map((task:any, index:any) => (
                                     <li key={task.id}>
-                                        {index + 1}. {task.task}
+                                        {index + 1}. {task.name}
                                         <button onClick={() => handleRemoveTask(task.id)}>Удалить</button>
                                     </li>
                                 ))}
