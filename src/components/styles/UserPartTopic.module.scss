@@ -1,0 +1,132 @@
+// src/components/styles/UserPartTopic.module.scss
+
+.taskPanel {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  padding: 20px;
+}
+
+.title {
+  font-size: 36px;
+  font-weight: 600;
+  line-height: 54px;
+  letter-spacing: -0.01em;
+  color: #0000CD;
+  border-bottom: #E4E7F2 solid 1px;
+  margin-bottom: 20px;
+  padding-bottom: 10px;
+  width: 100%;
+}
+
+.documentation {
+  width: 20%;
+}
+
+.main {
+  display: flex;
+  align-items: baseline;
+  label {
+    color: #0000CD;
+    font-weight: 700;
+    font-size: 23px;
+  }
+  h2 {
+    font-size: 28px;
+    font-weight: 600;
+    color: #3B4168;
+    margin-bottom: 20px;
+    text-align: center;
+  }
+}
+
+
+
+.tasks {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+  gap: 20px;
+  width: 100%;
+  button {
+    background: #FFFFFF;
+    color: #3B4168;
+    border: #3B4168 solid 1px;
+    border-radius: 12px;
+    padding: 10px 15px;
+    font-size: 18px;
+    font-weight: 500;
+    text-align: center;
+    margin-top: 10px;
+    cursor: pointer;
+    transition: all 0.3s ease;
+  }
+
+  button:hover {
+    background: #3B4168;
+    color: #FFFFFF;
+  }
+}
+
+
+
+.taskItem {
+  border-radius: 15px;
+  background: #BDB7FC;
+  padding: 20px;
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  align-items: center;
+  flex-grow: 1;
+  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+  transition: all 0.3s ease;
+  cursor: pointer;
+
+  &:hover {
+    transform: translateY(-5px);
+    box-shadow: 0 8px 16px rgba(0, 0, 0, 0.2);
+  }
+
+  h3 {
+    margin: 0 0 10px;
+    font-size: 20px;
+    color: #FFFFFF;
+    text-align: center;
+  }
+
+  p {
+    margin: 10px 0 0;
+    font-size: 16px;
+    color: #3B4168;
+    text-align: center;
+  }
+
+  .solveButton {
+    background: #0070f3;
+    color: #FFFFFF;
+    border: none;
+    padding: 10px 20px;
+    border-radius: 10px;
+    cursor: pointer;
+    transition: background-color 0.3s ease;
+
+    &:hover {
+      background-color: #005bb5;
+    }
+  }
+}
+
+.backButton {
+  margin-top: 20px;
+  padding: 10px 20px;
+  border: none;
+  border-radius: 5px;
+  background-color: #0070f3;
+  color: white;
+  cursor: pointer;
+  transition: background-color 0.3s ease;
+
+  &:hover {
+    background-color: #005bb5;
+  }
+}

@@ -1,160 +1,130 @@
-"use client";
+"use client"
 
-import { useEffect, useState } from 'react';
-import { useSelector, useDispatch } from 'react-redux';
-import { RootState, AppDispatch } from '@/store/store';
-import {
-    setSelection,
-    setIdUser,
-    setIdGroup,
-    addTopicUser,
-    removeTopicUser,
-    addTaskToTopicUser,
-    removeTaskFromTopicUser,
-    addTopicGroup,
-    removeTopicGroup,
-    addTaskToTopicGroup,
-    removeTaskFromTopicGroup
-} from '@/store/userSlice/userSlice';
-import "@/components/styles/AdminPanel.scss";
+import React, {useEffect, useState} from 'react';
+import { useDispatch, useSelector } from 'react-redux';
+import { RootState } from '@/store/store';
+import { setType, setSelectedId, addTopic, removeTopic, addTask, removeTask } from '@/store/userSlice/userSlice';
+import '@/components/styles/AdminPanel.scss'
 
-const AdminPanel = () => {
-    const dispatch: AppDispatch = useDispatch();
-    const { selection, id_user_list, id_group_list, id_user, id_group, topics_user, topics_group } = useSelector((state: RootState) => state.user);
-
+const AdminPanel: React.FC = () => {
     const [newTopic, setNewTopic] = useState('');
     const [newTask, setNewTask] = useState('');
-    const [selectedId, setSelectedId] = useState<string>('');
-    const [selectedTopic, setSelectedTopic] = useState<string>('');
+    const [selectedTopicIndex, setSelectedTopicIndex] = useState<number | null>(null);
+    const dispatch = useDispatch();
+    const user = useSelector((state: RootState) => state.user);
+
+    const currentData = user.type === 'participant' ? user.participantData[user.selectedId ?? ''] : user.groupData[user.selectedId ?? ''];
+
+    useEffect(() => {
+        console.log("Loaded state:", user);
+    }, [user]);
 
     const handleAddTopic = () => {
-        if (newTopic.trim() !== '') {
-            if (selection === 'group')
-                dispatch(addTopicGroup({ id: id_group!, topic: newTopic }));
-            else
-                dispatch(addTopicUser({ id: id_user!, topic: newTopic }));
+        if (newTopic) {
+            dispatch(addTopic(newTopic));
             setNewTopic('');
         }
     };
 
     const handleAddTask = () => {
-        if (newTask.trim() !== '') {
-            if (selection === 'group')
-                dispatch(addTaskToTopicGroup({ id: id_group!, topic: selectedTopic, task: newTask }));
-            else
-                dispatch(addTaskToTopicUser({ id: id_user!, topic: selectedTopic, task: newTask }));
+        if (newTask && selectedTopicIndex !== null) {
+            const task = `${currentData.topics[selectedTopicIndex]}: ${newTask}`;
+            dispatch(addTask(task));
             setNewTask('');
         }
     };
 
+    const handleTypeChange = (type: 'participant' | 'group') => {
+        dispatch(setType(type));
+        setSelectedTopicIndex(null); // сброс выбранной темы при смене типа
+    };
+
     const handleIdChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
-        const selectedValue = e.target.value;
-        setSelectedId(selectedValue);
-        setSelectedTopic(''); // Reset selected topic when ID changes
-        if (selection === 'participant') {
-            dispatch(setIdUser(selectedValue));
-        } else {
-            dispatch(setIdGroup(selectedValue));
-        }
+        dispatch(setSelectedId(e.target.value));
+        setSelectedTopicIndex(null); // сброс выбранной темы при смене ID
     };
 
-    const handleRemoveTopic = (topic: string) => {
-        if (selection === 'group') {
-            dispatch(removeTopicGroup({ id: id_group!, topic }));
-        } else {
-            dispatch(removeTopicUser({ id: id_user!, topic }));
-        }
-        if (selectedTopic === topic) {
-            setSelectedTopic('');
-        }
+    const selectTopic = (index: number) => {
+        setSelectedTopicIndex(selectedTopicIndex === index ? null : index);
     };
 
-    const handleRemoveTask = (taskId: string) => {
-        if (selection === 'group') {
-            dispatch(removeTaskFromTopicGroup({ id: id_group!, topic: selectedTopic, taskId }));
-        } else {
-            dispatch(removeTaskFromTopicUser({ id: id_user!, topic: selectedTopic, taskId }));
+    const handleRemoveTopic = (index: number) => {
+        dispatch(removeTopic(index));
+        if (selectedTopicIndex === index) {
+            setSelectedTopicIndex(null); // сброс выбранной темы, если она удаляется
+        } else if (selectedTopicIndex !== null && selectedTopicIndex > index) {
+            setSelectedTopicIndex(selectedTopicIndex - 1); // корректировка индекса, если удаляемая тема перед выбранной
         }
     };
-
-    useEffect(() => {
-        setSelectedId(selection === 'participant' ? (id_user !== null ? id_user : '') : (id_group !== null ? id_group : ''));
-    }, [selection, dispatch, id_user, id_group]);
-
-    const topics = selection === 'group' ? (id_group ? topics_group[id_group] || {} : {}) : (id_user ? topics_user[id_user] || {} : {});
-    const tasks = selectedTopic && topics[selectedTopic] ? topics[selectedTopic] : [];
 
     return (
-        <div className='main-user-page'>
-            <h1 className="title">Math Helper</h1>
-            <main>
-                <div className="documentation"></div>
-                <div>
-                    <div className="choose-type">
-                        <label>Выберите:</label>
-                        <button style={{ backgroundColor: selection === 'participant' ? '#CDCDFF' : 'white' }}
-                                onClick={() => dispatch(setSelection('participant'))}>Участник</button>
-                        <button style={{ backgroundColor: selection === 'group' ? '#CDCDFF' : 'white' }}
-                                onClick={() => dispatch(setSelection('group'))}>Группа</button>
-                    </div>
-                    <div className="choose-id">
-                        <label>Введите ID {(selection === 'participant' ? "участника" : "группы")}:</label>
-                        <select value={selectedId} onChange={handleIdChange}>
-                            <option value="">ВЫБЕРИТЕ ID</option>
-                            {(selection === 'participant' ? id_user_list : id_group_list).map((id) => (
-                                <option key={id} value={id}>{id}</option>
+        <div className="admin-panel">
+            <div className="header">
+                <div className="type-selection">
+                    <button onClick={() => handleTypeChange('participant')}
+                            className={user.type === 'participant' ? 'active' : ''}>Участник
+                    </button>
+                    <button onClick={() => handleTypeChange('group')}
+                            className={user.type === 'group' ? 'active' : ''}>Группа
+                    </button>
+                </div>
+                <select className="dropdown" onChange={handleIdChange} value={user.selectedId || ''}>
+                    <option value="">Выберите ID</option>
+                    {user.type === 'participant'
+                        ? Object.keys(user.participantData).map((id) => <option key={id} value={id}>{id}</option>)
+                        : Object.keys(user.groupData).map((id) => <option key={id} value={id}>{id}</option>)}
+                </select>
+            </div>
+            {user.selectedId && (
+                <div className="content">
+                    <div className="column">
+                        <h3>Темы {user.type === 'participant' ? 'участника' : 'группы'} ID:</h3>
+                        <ul>
+                            {currentData?.topics.map((topic, index) => (
+                                <li key={index}>
+                  <span onClick={() => selectTopic(index)} style={{ cursor: 'pointer' }}>
+                    {index + 1}. {topic}
+                  </span>
+                                    <span className="delete-btn" onClick={() => handleRemoveTopic(index)}>🗑</span>
+                                </li>
                             ))}
-                        </select>
-                    </div>
-                    {selectedId && (
-                        <div>
-                            <label>Темы {(selection === 'participant' ? "участника" : "группы")}:</label>
-                            <ul className={`topics ${Object.keys(topics).length === 0 ? 'empty-topics' : ''}`}>
-                                {Object.keys(topics).map((topic, index) => (
-                                    <li key={index}>
-                                        <div className="topic-item" onClick={() => setSelectedTopic(topic)}>
-                                            {index + 1}. {topic}
-                                            <button onClick={() => handleRemoveTopic(topic)}>Удалить</button>
-                                        </div>
-                                    </li>
-                                ))}
-                            </ul>
-                        </div>
-                    )}
-                    {selectedId && (
-                        <div className="add-topic">
-                            <label>Добавить тему:</label>
+                        </ul>
+                        <div className="form">
                             <input
                                 type="text"
+                                placeholder="Напишите тему"
                                 value={newTopic}
                                 onChange={(e) => setNewTopic(e.target.value)}
-                                placeholder="Напишите тему"
                             />
-                            <button onClick={handleAddTopic}>Добавить</button>
+                            <button onClick={handleAddTopic}>Добавить тему</button>
                         </div>
-                    )}
-                    {selectedTopic && (
-                        <div className="add-task">
-                            <label>Задачи для {selectedTopic}:</label>
-                            <ul className="tasks">
-                                {tasks.map((task, index) => (
-                                    <li key={task.id}>
-                                        {index + 1}. {task.task}
-                                        <button onClick={() => handleRemoveTask(task.id)}>Удалить</button>
-                                    </li>
-                                ))}
+                    </div>
+                    {selectedTopicIndex !== null && (
+                        <div className="column">
+                            <h3>Задачи для {currentData.topics[selectedTopicIndex]}:</h3>
+                            <ul>
+                                {currentData?.tasks
+                                    .filter(task => task.startsWith(`${currentData.topics[selectedTopicIndex]}:`))
+                                    .map((task, taskIndex) => (
+                                        <li key={taskIndex}>
+                                            {task.replace(`${currentData.topics[selectedTopicIndex]}: `, '')}
+                                            <span className="delete-btn" onClick={() => dispatch(removeTask(taskIndex))}>🗑</span>
+                                        </li>
+                                    ))}
                             </ul>
-                            <input
-                                type="text"
-                                value={newTask}
-                                onChange={(e) => setNewTask(e.target.value)}
-                                placeholder="Напишите задачу"
-                            />
-                            <button onClick={handleAddTask}>Добавить задачу</button>
+                            <div className="form">
+                                <input
+                                    type="text"
+                                    placeholder="Напишите задачу"
+                                    value={newTask}
+                                    onChange={(e) => setNewTask(e.target.value)}
+                                />
+                                <button onClick={handleAddTask}>Добавить задачу</button>
+                            </div>
                         </div>
                     )}
                 </div>
-            </main>
+            )}
         </div>
     );
 };
