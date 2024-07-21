@@ -138,6 +138,8 @@ const AdminPanel: React.FC = () => {
 
     const currentTasks = tasksData || [];
 
+    const selectedTopicName = topicsData?.find((topic: Topic) => topic.ID === user.selectedTopicId)?.topic || '';
+
     return (
         <div className="admin-panel">
             <div className="header">
@@ -186,7 +188,7 @@ const AdminPanel: React.FC = () => {
                     </div>
                     {user.selectedTopicId && (
                         <div className="column">
-                            <h3>Задачи для {topicsData.find((topic: any) => topic.id === user.selectedTopicId)?.topic}:</h3>
+                            <h3>Задачи для {selectedTopicName}:</h3>
                             {isTasksLoading ? (
                                 <p>Loading tasks...</p>
                             ) : (
