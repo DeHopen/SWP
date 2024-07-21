@@ -3,7 +3,7 @@
 import { useState, useEffect, useRef } from 'react';
 import { useSearchParams, useRouter } from 'next/navigation';
 import '@/components/styles/CommunicationWindow.scss';
-
+import { useGetModelQuery } from '@/store/api/modelApi';
 interface Message {
   id: number;
   sender: 'user' | 'model';
@@ -13,6 +13,7 @@ interface Message {
 
 export default function CommunicationWindow() {
   const [messages, setMessages] = useState<Message[]>([]);
+  const [messagesUser, setMessagesUser ] = useState<Message[]>([])
   const [input, setInput] = useState('');
   const [file, setFile] = useState<File | null>(null);
   const [isSending, setIsSending] = useState(false);
@@ -23,37 +24,35 @@ export default function CommunicationWindow() {
   const lastMessageIdRef = useRef<number | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
+  const { data: modelResponse, refetch } = useGetModelQuery(messagesUser);
+
   useEffect(() => {
     if (task && !initializedRef.current) {
-      console.log('Initializing with task:', task);
       const initialMessage: Message = {
         id: 1,
         sender: 'user',
         text: task,
       };
       setMessages([initialMessage]);
+      setMessagesUser([initialMessage])
       initializedRef.current = true;
-      simulateModelResponse(1);
+      refetch();
     }
-  }, [task]);
+  }, [task, refetch]);
 
-  const simulateModelResponse = (lastMessageId: number) => {
-    if (lastMessageIdRef.current === lastMessageId) return;
-    lastMessageIdRef.current = lastMessageId;
-    console.log('simulateModelResponse called with lastMessageId:', lastMessageId);
-    setTimeout(() => {
-      const modelResponse: Message = {
-        id: lastMessageId + 1,
+  useEffect(() => {
+    if (modelResponse) {
+      const modelMessage: Message = {
+        id: messages.length + 1,
         sender: 'model',
-        text: 'This is a response from the model.',
+        text: modelResponse.answer,
       };
-      console.log('Adding model response:', modelResponse);
-      setMessages((prevMessages) => [...prevMessages, modelResponse]);
+      setMessages((prevMessages) => [...prevMessages, modelMessage]);
       setIsSending(false);
-    }, 1000);
-  };
+    }
+  }, [modelResponse]);
 
-  const sendMessage = () => {
+  const sendMessage = async () => {
     if (input.trim() === '' && !file) return;
     if (isSending) return;
 
@@ -66,12 +65,10 @@ export default function CommunicationWindow() {
       file: file || undefined,
     };
 
-    console.log('Sending message:', newMessage);
-    setMessages((prevMessages) => {
-      const updatedMessages = [...prevMessages, newMessage];
-      simulateModelResponse(newMessage.id);
-      return updatedMessages;
-    });
+    setMessages((prevMessages) => [...prevMessages, newMessage]);
+    setMessagesUser((prevMessages) => [...prevMessages, newMessage]);
+    // Отправка запроса на сервер
+    const prompt = input.trim();
 
     setInput('');
     setFile(null);

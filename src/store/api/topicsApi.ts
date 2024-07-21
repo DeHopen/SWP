@@ -13,19 +13,25 @@ export const topicsApi = createApi({
         params: { id },
       }),
     }),
-    createTopic: builder.mutation({
-      query: ({ topic, user_id }) => ({
-        url: 'topics',
-        method: 'POST',
-        body: { topic, user_id },
-      }),
+    createTopic: builder.mutation<void, { id: string; topic: string }>({
+      query: ({ id, topic }) => {
+        console.log('Sending to server:', { id, topic });
+        return {
+          url: `create_topic`,
+          method: 'GET',
+          params: { id, topic },
+        };
+      },
     }),
-    deleteTopic: builder.mutation({
-      query: ({ topic_id, user_id }) => ({
-        url: 'topics',
-        method: 'DELETE',
-        body: { topic_id, user_id },
-      }),
+    deleteTopic: builder.mutation<void, { user_id: string; topic_id: string }>({
+      query: ({ user_id, topic_id }) => {
+        console.log('Sending to server:', { user_id, topic_id });
+        return {
+          url: `delete_topic`,
+          method: 'GET',
+          params: { user_id, topic_id },
+        };
+      },
     }),
   }),
 });

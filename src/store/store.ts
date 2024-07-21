@@ -1,30 +1,21 @@
 import { configureStore } from '@reduxjs/toolkit';
 import userReducer from './userSlice/userSlice';
 import taskReducer from './userSlice/taskSlice';
-import topicsReducer from './userSlice/topicsSlice';
-import tasksReducer from './userSlice/tasksSlice';
-import {loadState, saveState} from "@/store/localStorage";
-import throttle from 'lodash/throttle';
-
-const preloadedState = loadState();
+import {topicsApi} from "@/store/api/topicsApi";
+import {tasksApi} from "@/store/api/taskApi";
+import {modelApi} from "@/store/api/modelApi";
 
 export const store = configureStore({
   reducer: {
-    topics: topicsReducer,
-    tasks: tasksReducer,
     user: userReducer,
     task: taskReducer,
-    preloadedState,
+    [topicsApi.reducerPath]: topicsApi.reducer,
+    [tasksApi.reducerPath]: tasksApi.reducer,
+    [modelApi.reducerPath]: modelApi.reducer,
   },
+  middleware: (getDefaultMiddleware) =>
+      getDefaultMiddleware().concat(topicsApi.middleware, tasksApi.middleware, modelApi.middleware),
 });
-
-store.subscribe(throttle(() => {
-  const currentState = store.getState();
-  saveState(currentState);
-  console.log("Saved state to localStorage:", currentState);
-}, 1000));
-
-console.log("Initial state:", store.getState());
 
 
 export type RootState = ReturnType<typeof store.getState>;

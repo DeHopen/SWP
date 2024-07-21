@@ -14,8 +14,6 @@
   letter-spacing: -0.01em;
   color: #0000CD;
   border-bottom: #E4E7F2 solid 1px;
-  margin-bottom: 20px;
-  padding-bottom: 10px;
   width: 100%;
 }
 
@@ -117,16 +115,23 @@
 }
 
 .backButton {
-  margin-top: 20px;
-  padding: 10px 20px;
-  border: none;
-  border-radius: 5px;
-  background-color: #0070f3;
-  color: white;
-  cursor: pointer;
-  transition: background-color 0.3s ease;
+  display: flex;
+  gap: 10px;
 
-  &:hover {
-    background-color: #005bb5;
+  button{
+    margin-top: 20px;
+    padding: 10px 20px;
+    border: none;
+    border-radius: 25px;
+    background-color: #0070f3;
+    color: white;
+    cursor: pointer;
+    transition: background-color 0.3s ease;
+
+    &:hover {
+      background-color: #005bb5;
+    }
   }
+
+
 }

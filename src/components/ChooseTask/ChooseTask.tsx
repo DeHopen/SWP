@@ -5,26 +5,29 @@ import { useState } from 'react';
 import { useSelector } from 'react-redux';
 import { RootState } from '@/store/store';
 import styles from "@/components/styles/UserPartTopic.module.scss";
+import { useGetTasksQuery } from "@/store/api/taskApi";
+import Link from "next/link";
 
 export default function ChooseTask() {
   const { id } = useParams();
   const router = useRouter();
-  const [expandedTask, setExpandedTask] = useState<number | null>(null);
+  const [expandedTask, setExpandedTask] = useState<string | null>(null);
+  const user = useSelector((state: RootState) => state.user);
 
-  const tasks = useSelector((state: RootState) => state.task.tasks);
-  const topicNames = useSelector((state: RootState) => state.task.topicNames);
+  const { data: tasksData, isLoading: isTasksLoading, refetch } = useGetTasksQuery({
+    topic_id: id as string,
+    user_id: "2",
+  });
 
   if (!id) return null;
 
-  const topicId = +id;
-  const topicTasks = tasks[topicId] || [];
-  const topicName = topicNames[topicId] || 'Неизвестная тема';
+  const topicName = tasksData && tasksData.length > 0 ? tasksData[0].topic_name : 'Задачи не добавлены';
 
   const handleSolveTask = (task: string) => {
     router.push(`/model?task=${encodeURIComponent(task)}`);
   };
 
-  const toggleTaskDetails = (taskId: number) => {
+  const toggleTaskDetails = (taskId: string) => {
     setExpandedTask(expandedTask === taskId ? null : taskId);
   };
 
@@ -37,20 +40,29 @@ export default function ChooseTask() {
             <div>
               <h2>Задачи по теме: {topicName}</h2>
               <div className={styles.tasks}>
-                {topicTasks.map((task) => (
+                {isTasksLoading && <p>Loading...</p>}
+                {tasksData && tasksData.map((task) => (
                     <div
                         key={task.id}
                         className={`${styles.taskItem} ${expandedTask === task.id ? styles.expanded : ''}`}
                         onClick={() => toggleTaskDetails(task.id)}
                     >
-                      <h3>{task.summary}</h3>
-                      {expandedTask === task.id && <p>{task.details}</p>}
-                      <button className={styles.solveButton} onClick={(e) => { e.stopPropagation(); handleSolveTask(task.summary); }}>Решить в модели</button>
+                      <h3>{task.name}</h3>
+                      {expandedTask === task.id && <p>{task.description}</p>}
+                      <button className={styles.solveButton} onClick={(e) => {
+                        e.stopPropagation();
+                        handleSolveTask(task.description);
+                      }}>Решить в модели
+                      </button>
                     </div>
                 ))}
+
               </div>
-              <button className={styles.backButton} onClick={() => router.push('/')}>Назад к выбору темы</button>
-            </div>
+              <div className={styles.backButton}>
+                <button  onClick={() => router.push('/')}>Назад к выбору темы</button>
+                <button  onClick={() => router.push('/model')}>Общение с моделью</button>
+              </div>
+             </div>
           </div>
         </main>
       </div>

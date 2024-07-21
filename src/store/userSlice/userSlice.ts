@@ -1,20 +1,29 @@
-// src/redux/slices/userSlice.ts
 import { createSlice, PayloadAction } from '@reduxjs/toolkit';
 
-interface TopicsTasks {
-  topics: string[];
-  tasks: string[];
+interface Topic {
+  id: string;
+  topic: string;
+  tasks?: Task[];
+}
+
+interface Task {
+  id: string;
+  task: string;
 }
 
 interface UserState {
   type: 'participant' | 'group';
-  participantData: Record<string, TopicsTasks>;
-  groupData: Record<string, TopicsTasks>;
   selectedId: string | null;
+  selectedTopicId: string | null;
+  selectedTopicData: Topic | null;
+  participantData: Record<string, { topics: Topic[]; tasks: Task[] }>;
+  groupData: Record<string, { topics: Topic[]; tasks: Task[] }>;
 }
 
 const initialState: UserState = {
   type: 'participant',
+  selectedTopicId: null,
+  selectedTopicData: null,
   participantData: {
     '1': { topics: [], tasks: [] },
     '2': { topics: [], tasks: [] },
@@ -38,53 +47,58 @@ const userSlice = createSlice({
   reducers: {
     setType(state, action: PayloadAction<'participant' | 'group'>) {
       state.type = action.payload;
-      state.selectedId = null;
     },
     setSelectedId(state, action: PayloadAction<string>) {
       state.selectedId = action.payload;
     },
+    setSelectedTopicId(state, action: PayloadAction<string | null>) {
+      state.selectedTopicId = action.payload;
+    },
+    saveSelectedTopic(state, action: PayloadAction<Topic>) {
+      state.selectedTopicData = action.payload;
+    },
     addTopic(state, action: PayloadAction<string>) {
-      const id = state.selectedId;
-      if (id) {
-        if (state.type === 'participant') {
-          state.participantData[id].topics.push(action.payload);
+      if (state.selectedId) {
+        const data = state.type === 'participant' ? state.participantData : state.groupData;
+        if (data[state.selectedId]) {
+          data[state.selectedId].topics.push({ id: new Date().toISOString(), topic: action.payload });
         } else {
-          state.groupData[id].topics.push(action.payload);
+          data[state.selectedId] = { topics: [{ id: new Date().toISOString(), topic: action.payload }], tasks: [] };
         }
       }
     },
-    removeTopic(state, action: PayloadAction<number>) {
-      const id = state.selectedId;
-      if (id) {
-        if (state.type === 'participant') {
-          state.participantData[id].topics.splice(action.payload, 1);
-        } else {
-          state.groupData[id].topics.splice(action.payload, 1);
+    removeTopic(state, action: PayloadAction<string | null>) {
+      if (state.selectedId && action.payload) {
+        const data = state.type === 'participant' ? state.participantData : state.groupData;
+        if (data[state.selectedId]) {
+          data[state.selectedId].topics = data[state.selectedId].topics.filter(topic => topic.id !== action.payload);
         }
       }
     },
-    addTask(state, action: PayloadAction<string>) {
-      const id = state.selectedId;
-      if (id) {
-        if (state.type === 'participant') {
-          state.participantData[id].tasks.push(action.payload);
-        } else {
-          state.groupData[id].tasks.push(action.payload);
+    addTask(state, action: PayloadAction<{ topicId: string; task: string }>) {
+      if (state.selectedId) {
+        const data = state.type === 'participant' ? state.participantData : state.groupData;
+        const topic = data[state.selectedId].topics.find(topic => topic.id === action.payload.topicId);
+        if (topic) {
+          if (!topic.tasks) {
+            topic.tasks = [];
+          }
+          topic.tasks.push({ id: new Date().toISOString(), task: action.payload.task });
         }
       }
     },
-    removeTask(state, action: PayloadAction<number>) {
-      const id = state.selectedId;
-      if (id) {
-        if (state.type === 'participant') {
-          state.participantData[id].tasks.splice(action.payload, 1);
-        } else {
-          state.groupData[id].tasks.splice(action.payload, 1);
+    removeTask(state, action: PayloadAction<string>) {
+      if (state.selectedId && state.selectedTopicId) {
+        const data = state.type === 'participant' ? state.participantData : state.groupData;
+        const topic = data[state.selectedId].topics.find(topic => topic.id === state.selectedTopicId);
+        if (topic && topic.tasks) {
+          topic.tasks = topic.tasks.filter(task => task.id !== action.payload);
         }
       }
     },
   },
 });
 
-export const { setType, setSelectedId, addTopic, removeTopic, addTask, removeTask } = userSlice.actions;
+export const { setType, setSelectedId, addTopic, removeTopic, addTask, removeTask, setSelectedTopicId, saveSelectedTopic } = userSlice.actions;
+
 export default userSlice.reducer;

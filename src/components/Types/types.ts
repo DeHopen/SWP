@@ -1,6 +1,6 @@
 // types.ts
 export interface Task {
-  id: number;
+  id: string;
   summary: string;
   details: string;
 }

@@ -1,71 +1,152 @@
-"use client"
+'use client';
 
-import React, {useEffect, useState} from 'react';
+import React, { useState, useEffect } from 'react';
 import { useDispatch, useSelector } from 'react-redux';
 import { RootState } from '@/store/store';
-import { setType, setSelectedId, addTopic, removeTopic, addTask, removeTask } from '@/store/userSlice/userSlice';
-import '@/components/styles/AdminPanel.scss'
+import {
+    setType,
+    setSelectedId,
+    addTopic,
+    removeTopic,
+    addTask,
+    removeTask,
+    setSelectedTopicId, saveSelectedTopic
+} from '@/store/userSlice/userSlice';
+import '@/components/styles/AdminPanel.scss';
+import { useGetTopicsQuery, useCreateTopicMutation, useDeleteTopicMutation } from '@/store/api/topicsApi';
+import { useGetTasksQuery, useCreateTaskMutation, useDeleteTaskMutation } from '@/store/api/taskApi';
+
+interface Topic {
+    ID: string; // Предполагаем, что ID - строка, как в вашем примере
+    topic: string;
+}
 
 const AdminPanel: React.FC = () => {
-    const [newTopic, setNewTopic] = useState('');
-    const [newTask, setNewTask] = useState('');
-    const [selectedTopicIndex, setSelectedTopicIndex] = useState<number | null>(null);
+    const [newTopic, setNewTopic] = useState<string>('');
+    const [newTask, setNewTask] = useState<string>('');
     const dispatch = useDispatch();
     const user = useSelector((state: RootState) => state.user);
 
-    const currentData = user.type === 'participant' ? user.participantData[user.selectedId ?? ''] : user.groupData[user.selectedId ?? ''];
+    const [createTopic] = useCreateTopicMutation();
+    const [deleteTopic] = useDeleteTopicMutation();
+    const [createTask] = useCreateTaskMutation();
+    const [deleteTask] = useDeleteTaskMutation();
+
+    const { data: topicsData, isLoading: isTopicsLoading, refetch: refetchTopics } = useGetTopicsQuery(user.selectedId ?? '');
+    const { data: tasksData, isLoading: isTasksLoading, refetch: refetchTasks } = useGetTasksQuery({
+        topic_id: user.selectedTopicId ?? '',
+        user_id: user.selectedId ?? '',
+    });
 
     useEffect(() => {
         console.log("Loaded state:", user);
     }, [user]);
 
-    const handleAddTopic = () => {
+    useEffect(() => {
+        console.log("Topics Data:", topicsData);
+    }, [topicsData]);
+
+    useEffect(() => {
+        console.log("Tasks Data:", tasksData);
+    }, [tasksData]);
+
+    const handleAddTopic = async () => {
         if (newTopic) {
-            dispatch(addTopic(newTopic));
-            setNewTopic('');
+            try {
+                console.log('Adding topic:', { id: user.selectedId!, topic: newTopic });
+                await createTopic({ id: user.selectedId!, topic: newTopic });
+                dispatch(addTopic(newTopic));
+                setNewTopic('');
+                refetchTopics(); // Refetch topics after adding a new topic
+            } catch (error) {
+                console.error('Failed to add topic:', error);
+            }
         }
     };
 
-    const handleAddTask = () => {
-        if (newTask && selectedTopicIndex !== null) {
-            const task = `${currentData.topics[selectedTopicIndex]}: ${newTask}`;
-            dispatch(addTask(task));
-            setNewTask('');
+    const handleAddTask = async () => {
+        if (newTask) {
+            try {
+                console.log('Adding task:', {
+                    desc: newTask,
+                    name: newTask,
+                    topic_id: user.selectedTopicId!,
+                    user_id: user.selectedId!,
+                });
+                await createTask({
+                    desc: newTask,
+                    name: newTask,
+                    topic_id: user.selectedTopicId!,
+                    user_id: user.selectedId!,
+                });
+                dispatch(addTask({ topicId: user.selectedTopicId!, task: newTask }));
+                setNewTask('');
+                refetchTasks(); // Refetch tasks after adding a new task
+            } catch (error) {
+                console.error('Failed to add task:', error);
+            }
         }
     };
 
     const handleTypeChange = (type: 'participant' | 'group') => {
         dispatch(setType(type));
-        setSelectedTopicIndex(null); // сброс выбранной темы при смене типа
+        dispatch(setSelectedTopicId(null)); // сброс выбранной темы при смене типа
     };
 
     const handleIdChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
         dispatch(setSelectedId(e.target.value));
-        setSelectedTopicIndex(null); // сброс выбранной темы при смене ID
     };
 
-    const selectTopic = (index: number) => {
-        setSelectedTopicIndex(selectedTopicIndex === index ? null : index);
+    const handleTopicClick = (topic: Topic) => {
+        dispatch(setSelectedTopicId(topic.ID.toString()));
+        dispatch(saveSelectedTopic({ id: topic.ID.toString(), topic: topic.topic }));
     };
 
-    const handleRemoveTopic = (index: number) => {
-        dispatch(removeTopic(index));
-        if (selectedTopicIndex === index) {
-            setSelectedTopicIndex(null); // сброс выбранной темы, если она удаляется
-        } else if (selectedTopicIndex !== null && selectedTopicIndex > index) {
-            setSelectedTopicIndex(selectedTopicIndex - 1); // корректировка индекса, если удаляемая тема перед выбранной
+    const handleRemoveTopic = async () => {
+        if (!user.selectedId || !user.selectedTopicId) {
+            console.error('User ID or selected topic ID is missing');
+            return;
+        }
+
+        try {
+            console.log('Removing topic:', { user_id: user.selectedId!, topic_id: user.selectedTopicId });
+            await deleteTopic({ user_id: user.selectedId!, topic_id: user.selectedTopicId });
+            dispatch(removeTopic(user.selectedTopicId));
+            dispatch(setSelectedTopicId(null)); // reset selected topic ID after removal
+            refetchTopics(); // Refetch topics after removing a topic
+        } catch (error) {
+            console.error('Failed to remove topic:', error);
         }
     };
+
+    const handleRemoveTask = async (taskId: string) => {
+        try {
+            console.log('Removing task:', {
+                user_id: user.selectedId!,
+                task_id: taskId,
+            });
+            await deleteTask({
+                user_id: user.selectedId!,
+                task_id: taskId,
+            });
+            dispatch(removeTask(taskId));
+            refetchTasks(); // Refetch tasks after removing a task
+        } catch (error) {
+            console.error('Failed to remove task:', error);
+        }
+    };
+
+    const currentTasks = tasksData || [];
 
     return (
         <div className="admin-panel">
             <div className="header">
                 <div className="type-selection">
-                    <button onClick={() => handleTypeChange('participant')}
-                            className={user.type === 'participant' ? 'active' : ''}>Участник
+                    <button onClick={() => handleTypeChange('participant')} className={user.type === 'participant' ? 'active' : ''}>
+                        Участник
                     </button>
-                    <button onClick={() => handleTypeChange('group')}
-                            className={user.type === 'group' ? 'active' : ''}>Группа
+                    <button onClick={() => handleTypeChange('group')} className={user.type === 'group' ? 'active' : ''}>
+                        Группа
                     </button>
                 </div>
                 <select className="dropdown" onChange={handleIdChange} value={user.selectedId || ''}>
@@ -79,16 +160,20 @@ const AdminPanel: React.FC = () => {
                 <div className="content">
                     <div className="column">
                         <h3>Темы {user.type === 'participant' ? 'участника' : 'группы'} ID:</h3>
-                        <ul>
-                            {currentData?.topics.map((topic, index) => (
-                                <li key={index}>
-                  <span onClick={() => selectTopic(index)} style={{ cursor: 'pointer' }}>
-                    {index + 1}. {topic}
-                  </span>
-                                    <span className="delete-btn" onClick={() => handleRemoveTopic(index)}>🗑</span>
-                                </li>
-                            ))}
-                        </ul>
+                        {isTopicsLoading ? (
+                            <p>Loading topics...</p>
+                        ) : (
+                            <ul>
+                                {topicsData?.map((topic: Topic) => (
+                                    <li key={topic.ID}>
+                                        <span onClick={() => handleTopicClick(topic)} style={{ cursor: 'pointer' }}>
+                                            {topic.topic}
+                                        </span>
+                                        <button onClick={handleRemoveTopic}>Удалить</button>
+                                    </li>
+                                ))}
+                            </ul>
+                        )}
                         <div className="form">
                             <input
                                 type="text"
@@ -99,19 +184,21 @@ const AdminPanel: React.FC = () => {
                             <button onClick={handleAddTopic}>Добавить тему</button>
                         </div>
                     </div>
-                    {selectedTopicIndex !== null && (
+                    {user.selectedTopicId && (
                         <div className="column">
-                            <h3>Задачи для {currentData.topics[selectedTopicIndex]}:</h3>
-                            <ul>
-                                {currentData?.tasks
-                                    .filter(task => task.startsWith(`${currentData.topics[selectedTopicIndex]}:`))
-                                    .map((task, taskIndex) => (
+                            <h3>Задачи для {topicsData.find((topic: any) => topic.id === user.selectedTopicId)?.topic}:</h3>
+                            {isTasksLoading ? (
+                                <p>Loading tasks...</p>
+                            ) : (
+                                <ul>
+                                    {currentTasks.map((task: any, taskIndex: any) => (
                                         <li key={taskIndex}>
-                                            {task.replace(`${currentData.topics[selectedTopicIndex]}: `, '')}
-                                            <span className="delete-btn" onClick={() => dispatch(removeTask(taskIndex))}>🗑</span>
+                                            {task.name}
+                                            <span className="delete-btn" onClick={() => handleRemoveTask(task.id)}>🗑</span>
                                         </li>
                                     ))}
-                            </ul>
+                                </ul>
+                            )}
                             <div className="form">
                                 <input
                                     type="text"
