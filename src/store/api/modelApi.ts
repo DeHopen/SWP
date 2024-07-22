@@ -14,4 +14,4 @@ export const modelApi = createApi({
   }),
 });
 
-export const { useGetModelQuery } = modelApi;
+export const { useGetModelQuery, useLazyGetModelQuery } = modelApi;

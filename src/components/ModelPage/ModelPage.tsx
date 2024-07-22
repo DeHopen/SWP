@@ -3,7 +3,7 @@
 import { useState, useEffect, useRef } from 'react';
 import { useSearchParams, useRouter } from 'next/navigation';
 import '@/components/styles/CommunicationWindow.scss';
-import { useGetModelQuery } from '@/store/api/modelApi';
+import {useLazyGetModelQuery} from '@/store/api/modelApi';
 interface Message {
   id: number;
   sender: 'user' | 'model';
@@ -13,7 +13,6 @@ interface Message {
 
 export default function CommunicationWindow() {
   const [messages, setMessages] = useState<Message[]>([]);
-  const [messagesUser, setMessagesUser ] = useState<Message[]>([])
   const [input, setInput] = useState('');
   const [file, setFile] = useState<File | null>(null);
   const [isSending, setIsSending] = useState(false);
@@ -21,10 +20,9 @@ export default function CommunicationWindow() {
   const router = useRouter();
   const task = searchParams.get('task');
   const initializedRef = useRef(false);
-  const lastMessageIdRef = useRef<number | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
-  const { data: modelResponse, refetch } = useGetModelQuery(messagesUser);
+  const [triggerGetModel, { data: modelResponse }] = useLazyGetModelQuery();
 
   useEffect(() => {
     if (task && !initializedRef.current) {
@@ -34,18 +32,17 @@ export default function CommunicationWindow() {
         text: task,
       };
       setMessages([initialMessage]);
-      setMessagesUser([initialMessage])
       initializedRef.current = true;
-      refetch();
+      triggerGetModel(task);
     }
-  }, [task, refetch]);
+  }, [task, triggerGetModel]);
 
   useEffect(() => {
-    if (modelResponse) {
+    if (modelResponse && modelResponse.answer) {
       const modelMessage: Message = {
         id: messages.length + 1,
         sender: 'model',
-        text: modelResponse.answer,
+        text: modelResponse.answer, // Access the answer property correctly
       };
       setMessages((prevMessages) => [...prevMessages, modelMessage]);
       setIsSending(false);
@@ -66,15 +63,15 @@ export default function CommunicationWindow() {
     };
 
     setMessages((prevMessages) => [...prevMessages, newMessage]);
-    setMessagesUser((prevMessages) => [...prevMessages, newMessage]);
-    // Отправка запроса на сервер
-    const prompt = input.trim();
 
     setInput('');
     setFile(null);
     if (fileInputRef.current) {
       fileInputRef.current.value = '';
     }
+
+    // Trigger the model query with the new message text
+    triggerGetModel(input.trim());
   };
 
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
